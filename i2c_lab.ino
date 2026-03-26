@@ -36,15 +36,11 @@ void setup() {
   delay(500);
   Wire.begin();           // Initializes the I2C interface with default pinouts (SDA=A4, SCL=A5)
   delay(500);
+
+  setBackLightColor(0xFF, 0xFF, 0x00);
 }
 
 void loop() {
-  /* Your solution here — see Section 4 of the lab writeup for the full spec.
-   * You want to update this loop as you go through your lab.
-   * DO NOT start here, follow the order of implementation in the writeup. 
-   * Your loop should do all of the following in order:
-   */
-
   // TEMP
   curTemp = readCurrentTemp();
   Serial.printf("Current Temp: %d \n\n", curTemp);
@@ -54,11 +50,11 @@ void loop() {
     Serial.println("Button Pressed!");
 
     memData = curTemp;
-    tempBrightness = (curTemp - 20) / 5.0 * 0xFF;
+    tempBrightness = (curTemp - 22) / 10.0 * 255.0;
     tempBrightness = (tempBrightness > 0xFF) ? 0xFF : tempBrightness;
     tempBrightness = (tempBrightness < 0) ? 0 : tempBrightness;
     
-    // Serial.printf("Temp Bright: %d\n", tempBrightness);
+    Serial.printf("Temp Bright: %d\n", tempBrightness);
     setBtnLED(tempBrightness);
 
     Serial.printf("Previous Temp: %d\n", memRead(highAddr, lowAddr));
@@ -72,13 +68,13 @@ void loop() {
     Serial.printf("Current Mem Addr: %x -> %x %x\n\n\n", memAddr, highAddr, lowAddr);
 
     // LCD
-    sendToLCD(bytearray("Temperature Stored!"));
-
+    sendToLCD(bytearray("Temperature     Stored!"));
+    
+    setBackLightColor(0xFF, (0xFF - memAddr * 2 < 0) ? 0 : 0xFF - memAddr * 2, 0x00);
   } else {
     setBtnLED(0x00);
-    sendToLCD(bytearray("Click to store temperature!"));
+    sendToLCD(bytearray("Click to store  temperature!"));
   }
-
 
   // Loop delay — keep this at the bottom
   delay(200);
@@ -239,12 +235,16 @@ byte memRead(int high_addr, int low_addr) {
  *  @param data  Data to be sent
  */
 void sendToLCD(bytearray data) {
-  int clearArr[2] = { 0x7C, 0x2D };
-  bytearray clear(clearArr, 2);
-  i2c_writeTo(LCD_ADDR, clear);
+  clearLCD();
   i2c_writeTo(LCD_ADDR, data);
 
   return;
+}
+
+void clearLCD() {
+  int clearArr[2] = { 0x7C, 0x2D };
+  bytearray clear(clearArr, 2);
+  i2c_writeTo(LCD_ADDR, clear);
 }
 
 /** @brief Set backlight color for LCD
