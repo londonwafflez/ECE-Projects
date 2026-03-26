@@ -20,6 +20,17 @@ static byte mem_pos = 0;  /* Current position in the EEPROM to write to.
                              the button is pressed (since we store 2 bytes per
                              temperature reading), BEFORE reading or writing. */
 
+static int memAddr  = 0x0;
+static int highAddr = 0;
+static int lowAddr  = 0;
+static int memData  = 0;
+static int curTemp  = 0;
+static float tempBrightness  = 0;
+
+static int memAddrInit[3] = {highAddr, lowAddr, 0};
+static bytearray memAddrArr(memAddrInit, 3);
+
+
 void setup() {
   Serial.begin(115200);   // Initializes the USB serial connection at 115200 baud
   delay(500);
@@ -34,14 +45,43 @@ void loop() {
    * Your loop should do all of the following in order:
    */
 
-  // Serial.println(readCurrentTemp());
+  // TEMP
+  curTemp = readCurrentTemp();
+  Serial.printf("Current Temp: %d \n\n", curTemp);
 
-  // Serial.println(getBtnState());
-  if (getBtnState()) setBtnLED(0x3F); //3F
-  else setBtnLED(0x00);
+  // BTN 
+  if (getBtnState()) {
+    Serial.println("Button Pressed!");
+
+    memData = curTemp;
+    tempBrightness = (curTemp - 20) / 5.0 * 0xFF;
+    tempBrightness = (tempBrightness > 0xFF) ? 0xFF : tempBrightness;
+    tempBrightness = (tempBrightness < 0) ? 0 : tempBrightness;
+    
+    // Serial.printf("Temp Bright: %d\n", tempBrightness);
+    setBtnLED(tempBrightness);
+
+    Serial.printf("Previous Temp: %d\n", memRead(highAddr, lowAddr));
+    
+    memAddr += 2;
+    highAddr = memAddr >> 8;
+    lowAddr  = memAddr & 0xFF;
+
+    memWrite(highAddr, lowAddr, memData);
+    Serial.printf("New Temp: %d\n", memRead(highAddr, lowAddr));
+    Serial.printf("Current Mem Addr: %x -> %x %x\n\n\n", memAddr, highAddr, lowAddr);
+
+    // LCD
+    sendToLCD(bytearray("Temperature Stored!"));
+
+  } else {
+    setBtnLED(0x00);
+    sendToLCD(bytearray("Click to store temperature!"));
+  }
+
 
   // Loop delay — keep this at the bottom
-  delay(2000);
+  delay(200);
 }
 
 /** @brief Converts the high and low bytes of temperature values to a float.
@@ -114,7 +154,7 @@ bool getBtnState() {
   bytearray btnData = i2c_readFrom (BTN_ADDR, 1);
 
   if (btnData[0] & 0x04) {
-    Serial.printf("Data: %d and %d are equal with output %d \n", btnData[0], 0x04, (btnData[0] & 0x04));
+    // Serial.printf("Data: %d and %d are equal with output %d \n", btnData[0], 0x04, (btnData[0] & 0x04));
     return true;
   }
 
@@ -136,8 +176,6 @@ void setBtnLED(byte brightness) {
   bytearray addr(arr , 2);
   i2c_writeTo(BTN_ADDR, addr);
   delay(20); // 20ms
-
-  Serial.printf("LED Data: %x\n", i2c_readFrom (BTN_ADDR, 1));
 
   return; // remove this once your code is in place
 }
@@ -163,12 +201,11 @@ void setBtnLED(byte brightness) {
  */
 void memWrite(int high_addr, int low_addr, int data) {
 
-  int arr[2] = { high_addr, low_addr, data };
-  bytearray addr(arr , 2);
+  int arr[3] = { high_addr, low_addr, data };
+  bytearray addr(arr , 3);
   i2c_writeTo(MEM_ADDR, addr);
-  delay(20); // 20ms 
+  delay(10); 
 
-  return; // remove this once your code is in place
 }
 
 /** @brief Reads a single byte from the given 12-bit address in the EEPROM.
@@ -191,9 +228,34 @@ byte memRead(int high_addr, int low_addr) {
   bytearray addr(arr , 2);
   i2c_writeTo(MEM_ADDR, addr);
 
-  delay(20); // 20ms
+  delay(10); 
 
   // Serial.printf("Memory Data: %x\n", i2c_readFrom (MEM_ADDR, 2));
 
   return i2c_readFrom(MEM_ADDR, 1)[0]; 
+}
+
+/** @brief Send Data to LCD
+ *  @param data  Data to be sent
+ */
+void sendToLCD(bytearray data) {
+  int clearArr[2] = { 0x7C, 0x2D };
+  bytearray clear(clearArr, 2);
+  i2c_writeTo(LCD_ADDR, clear);
+  i2c_writeTo(LCD_ADDR, data);
+
+  return;
+}
+
+/** @brief Set backlight color for LCD
+ *  @param r red value
+ *  @param g green value
+ *  @param b blue value
+ */
+void setBackLightColor(int r, int g, int b) {
+
+  int data[5] = { 0x7C, 0x2B, r, g, b };
+  i2c_writeTo(LCD_ADDR, bytearray(data, 5));
+
+  return;
 }
