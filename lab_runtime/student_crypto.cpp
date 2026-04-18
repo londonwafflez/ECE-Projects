@@ -1,21 +1,28 @@
 #include "student_crypto.hpp"
 
 #include <cstddef>
+#include <iostream>
+using namespace std;
 
 namespace {
-int normalizeShift(int shift) {
-    int result = shift % 26;
-    if (result < 0) {
-        result += 26;
+    int normalizeShift(int shift) {
+        int result = shift % 26;
+        if (result < 0) {
+            result += 26;
+        }
+        return result;
     }
-    return result;
-}
 }  // namespace
-
 // BEGIN STUDENT CODE
+
+int main() {
+    cout << encryptCaesar("abc xyz", 3) << endl;
+    return 0;
+}
 
 uint32_t modExp(uint32_t base, uint32_t exp, uint32_t mod) {
     // TODO: Replace this with fast modular exponentiation.
+    
     (void)base;
     (void)exp;
     return mod == 0 ? 0u : 1u % mod;
@@ -27,12 +34,40 @@ uint8_t stepLFSR(uint8_t state) {
 }
 
 String encryptCaesar(const String& plaintext, int shift) {
-    // TODO: Shift lowercase letters by the normalized shift amount.
-    (void)shift;
-    return plaintext;
+    vector<char> encrypted;
+    char newC; 
+
+    shift %= 26; 
+    for (char c : plaintext) {
+        if (c < 0x61 || c > 0x7A) {
+            encrypted.push_back(c);
+            continue;
+        }
+        newC = c + shift;
+        if (newC <= 0x61) newC += 0x1A;
+        if (newC >= 0x7A) newC -= 0x1A;
+        encrypted.push_back(newC);
+    }
+    return String (encrypted.begin(), encrypted.end());
 }
 
 String decryptCaesar(const String& ciphertext, int shift) {
+    vector<char> decrypted;
+    char newC; 
+
+    shift %= 26; 
+    for (char c : ciphertext) {
+        if (c < 0x61 || c > 0x7A) {
+            decrypted.push_back(c);
+            continue;
+        }
+        newC = c + shift;
+        if (newC <= 0x61) newC += 0x1A;
+        if (newC >= 0x7A) newC -= 0x1A;
+        decrypted.push_back(newC);
+    }
+    return String (decrypted.begin(), decrypted.end());
+
     // TODO: Reverse the Caesar shift.
     (void)shift;
     return ciphertext;
