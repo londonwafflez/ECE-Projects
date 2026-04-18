@@ -17,6 +17,7 @@ namespace {
 
 int main() {
     cout << encryptCaesar("abc xyz", 3) << endl;
+    cout << decryptCaesar(encryptCaesar("abc xyz", 3), 3) << endl;
     return 0;
 }
 
@@ -44,8 +45,8 @@ String encryptCaesar(const String& plaintext, int shift) {
             continue;
         }
         newC = c + shift;
-        if (newC <= 0x61) newC += 0x1A;
-        if (newC >= 0x7A) newC -= 0x1A;
+        if (newC < 0x61) newC += 0x1A;
+        if (newC > 0x7A) newC -= 0x1A;
         encrypted.push_back(newC);
     }
     return String (encrypted.begin(), encrypted.end());
@@ -61,16 +62,12 @@ String decryptCaesar(const String& ciphertext, int shift) {
             decrypted.push_back(c);
             continue;
         }
-        newC = c + shift;
-        if (newC <= 0x61) newC += 0x1A;
-        if (newC >= 0x7A) newC -= 0x1A;
+        newC = c - shift;
+        if (newC < 0x61) newC += 0x1A;
+        if (newC > 0x7A) newC -= 0x1A;
         decrypted.push_back(newC);
     }
     return String (decrypted.begin(), decrypted.end());
-
-    // TODO: Reverse the Caesar shift.
-    (void)shift;
-    return ciphertext;
 }
 
 std::vector<uint8_t> encryptLFSR(const String& plaintext, uint8_t seed) {
