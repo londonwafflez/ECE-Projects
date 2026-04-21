@@ -2,6 +2,8 @@
 
 #include <cstddef>
 #include <iostream>
+#include <cmath>
+#include <inttypes.h>
 using namespace std;
 
 namespace {
@@ -15,22 +17,35 @@ namespace {
 }  // namespace
 // BEGIN STUDENT CODE
 
-int main() {
-    cout << encryptCaesar("abc xyz", 3) << endl;
-    cout << decryptCaesar(encryptCaesar("abc xyz", 3), 3) << endl;
-    return 0;
-}
+// int main() {
+//     // cout << encryptCaesar("abc xy35./z", -28) << endl;
+//     // cout << decryptCaesar(encryptCaesar("abc xy35./z", -5), -5) << endl;
+//     // for (uint32_t i : encryptRSA("hi", 3, 391)) {printf("%d, ", i);}; 
+//     for (uint8_t i : encryptLFSR("abc", 0xA7)) {printf("%X, ", i);}; 
+//     cout << endl;
+//     for (uint8_t i : decryptLFSR(vector<uint8_t>{0xC6, 0x96, 0xED}, 0xA7)) {printf("%c, ", i);}; 
+//     cout << endl;
+//     // cout << ("Decrypt RSA: " + decryptRSA(vector<uint32_t>{348, 265}, 3, 391)) << endl; 
+//     // printf("Step LFSR %x\n", stepLFSR(0xA7)); // 0x53
+//     // 1010 0111 -> 0101 0011
+//     //   A7      -> 53
+//     // d3 = 1101 0011
+    
+//     return 0;
+// }
 
 uint32_t modExp(uint32_t base, uint32_t exp, uint32_t mod) {
-    // TODO: Replace this with fast modular exponentiation.
-    
-    (void)base;
-    (void)exp;
-    return mod == 0 ? 0u : 1u % mod;
+    // uint16_t one_e = exp & 0xF0;
+    // uint16_t two_e = exp & 0x0F;
+    uint32_t out = pow(base, exp);
+    // cout << (mod == 0 ? 0u : out % mod) << endl;
+    return mod == 0 ? 0u : out % mod;
 }
 
 uint8_t stepLFSR(uint8_t state) {
-    // TODO: Replace this with the correct 8-bit LFSR step.
+    int tap = (state ^ state >> 1) & 0x01;
+    state = state >> 1;
+    if (tap) state += 0x80;
     return state;
 }
 
@@ -49,7 +64,7 @@ String encryptCaesar(const String& plaintext, int shift) {
         if (newC > 0x7A) newC -= 0x1A;
         encrypted.push_back(newC);
     }
-    return String (encrypted.begin(), encrypted.end());
+    return String(encrypted.begin(), encrypted.end());
 }
 
 String decryptCaesar(const String& ciphertext, int shift) {
@@ -67,17 +82,18 @@ String decryptCaesar(const String& ciphertext, int shift) {
         if (newC > 0x7A) newC -= 0x1A;
         decrypted.push_back(newC);
     }
-    return String (decrypted.begin(), decrypted.end());
+    return String(decrypted.begin(), decrypted.end());
 }
 
 std::vector<uint8_t> encryptLFSR(const String& plaintext, uint8_t seed) {
-    // TODO: Build and return the ciphertext byte list.
     std::vector<uint8_t> out;
     out.reserve(plaintext.length()); // Gives you enough space to store the output
-    for (size_t i = 0; i < plaintext.length(); ++i) {
-        out.push_back(static_cast<uint8_t>(static_cast<unsigned char>(plaintext[i])));
+    for (size_t i = 0; i < plaintext.length(); i++) {
+        out.push_back(static_cast<uint8_t>(static_cast<unsigned char>(plaintext[i])) ^ seed);
+        for (int i = 0; i < 8; i++) {
+            seed = stepLFSR(seed);
+        }
     }
-    (void)seed;
     return out;
 }
 
@@ -86,33 +102,31 @@ String decryptLFSR(const std::vector<uint8_t>& ciphertext, uint8_t seed) {
     String out;
     out.reserve(ciphertext.size()); // Gives you enough space to store the output
     for (uint8_t byte : ciphertext) {
-        out += static_cast<char>(byte);
+        out += static_cast<char>(byte ^ seed);
+        for (int i = 0; i < 8; i++) {
+            seed = stepLFSR(seed);
+        }
     }
-    (void)seed;
     return out;
 }
 
 std::vector<uint32_t> encryptRSA(const String& plaintext, uint32_t e, uint32_t n) {
-    // TODO: Build and return the RSA ciphertext block list.
     std::vector<uint32_t> out;
     out.reserve(plaintext.length()); // Gives you enough space to store the output
-    for (size_t i = 0; i < plaintext.length(); ++i) {
-        out.push_back(static_cast<uint32_t>(static_cast<unsigned char>(plaintext[i])));
+    for (size_t i = 0; i < plaintext.length(); i++) {
+        out.push_back(modExp(plaintext[i], e, n));
     }
-    (void)e;
-    (void)n;
     return out;
 }
 
 String decryptRSA(const std::vector<uint32_t>& ciphertext, uint32_t d, uint32_t n) {
-    // TODO: Use the ciphertext block list to recover the plaintext.
     String out;
     out.reserve(ciphertext.size()); // Gives you enough space to store the output
     for (uint32_t block : ciphertext) {
-        out += static_cast<char>(block);
+        printf("out: %x, block: %d\n", modExp(block, d, n), block);
+        // printf("out: %s", static_cast<char>(modExp(block, d, n)));
+        out += static_cast<char>(modExp(block, d, n));
     }
-    (void)d;
-    (void)n;
     return out;
 }
 
