@@ -18,11 +18,14 @@ namespace {
 // BEGIN STUDENT CODE
 
 // int main() {
-    // printf("Modexp: %d", modExp(79,17,3233));
+//     printf("Modexp: %d\n", modExp(0x80,17,3233));
+//     printf("Modexp: %d\n", modExp(128,17,3233));
+//     printf("Modexp: %d\n", modExp(0x7F,17,3233));
+//     cout << endl;
 
     // cout << encryptCaesar("abc xy35./z", -28) << endl;
     // cout << decryptCaesar(encryptCaesar("abc xy35./z", -5), -5) << endl;
-    // for (uint32_t i : encryptRSA("hi", 3, 391)) {printf("%d, ", i);}; 
+    // for (uint32_t i : encryptRSA("\x01\x7F\x80\xFF", 17, 3233)) printf("%d, ", i); 
     // for (uint8_t i : encryptLFSR("abc", 0xA7)) {printf("%X, ", i);}; 
     // cout << endl;
     // for (uint8_t i : decryptLFSR(vector<uint8_t>{0xC6, 0x96, 0xED}, 0xA7)) {printf("%c, ", i);}; 
@@ -39,8 +42,7 @@ namespace {
 
 uint32_t modExp(uint32_t base, uint32_t exp, uint32_t mod) {
     uint64_t out = 1;
-    if (exp & 1) out = base;
-    cout << out << endl;
+    if (exp & 1) out = base % mod;
     for (int i = 1; i < 32; i++) {
         if (exp & static_cast<uint32_t>(pow(2, i))) {
             for (int j = 0; j < pow(2, i); j++) {
@@ -107,7 +109,6 @@ std::vector<uint8_t> encryptLFSR(const String& plaintext, uint8_t seed) {
 }
 
 String decryptLFSR(const std::vector<uint8_t>& ciphertext, uint8_t seed) {
-    // TODO: Use the ciphertext byte list to recover the plaintext.
     String out;
     out.reserve(ciphertext.size()); // Gives you enough space to store the output
     for (uint8_t byte : ciphertext) {
@@ -123,7 +124,8 @@ std::vector<uint32_t> encryptRSA(const String& plaintext, uint32_t e, uint32_t n
     std::vector<uint32_t> out;
     out.reserve(plaintext.length()); // Gives you enough space to store the output
     for (size_t i = 0; i < plaintext.length(); i++) {
-        out.push_back(modExp(plaintext[i], e, n));
+        // printf("plaintext[i] = %x, mod = %d\n", static_cast<unsigned char>(plaintext[i]), modExp(plaintext[i], e, n));
+        out.push_back(modExp(static_cast<unsigned char>(plaintext[i]), e, n));
     }
     return out;
 }
